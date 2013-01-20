@@ -7,7 +7,9 @@ main :: IO ()
 main = getArgs >>= parse
 
 parse :: [String] -> IO ()
-parse ["add"] = with_db add
+parse ["add"] = do
+  _ <- with_db add
+  return ()
 parse ["dump"] = with_db dump
 parse [] = with_db pick
 parse _ = urge_to_add
@@ -19,7 +21,6 @@ pick conn = do
       [] -> urge_to_add
       [r] -> focus conn r
       _ -> undefined
-
 
 focus :: IConnection t => t -> [SqlValue] -> IO ()
 focus conn [i,name,SqlNull] = do
@@ -47,16 +48,22 @@ remove i conn = do
 add_wait :: IConnection conn => SqlValue -> conn -> IO ()
 add_wait i conn = do
   dump conn
+  putStrLn "n: a new task"
   putStrLn "after which task?"
   putStr "> "
   hFlush stdout
   number <- getLine
-  count <- quickQuery' conn "SELECT * FROM htodo WHERE id = ?" [toSql number]
-  if ((count == []) || (toSql number == i)) then
-     error "invalid task number specified"
-     else do
-       _ <- run conn "UPDATE htodo SET waiting = ? WHERE id = ?" [toSql number, i]
-       commit conn
+  if number == "n" then do
+    added <- add conn
+    _ <- run conn "UPDATE htodo SET waiting = ? WHERE id = ?" [toSql added, i]
+    commit conn
+    else do
+      count <- quickQuery' conn "SELECT * FROM htodo WHERE id = ?" [toSql number]
+      if ((count == []) || (toSql number == i)) then
+        error "invalid task number specified"
+        else do
+          _ <- run conn "UPDATE htodo SET waiting = ? WHERE id = ?" [toSql number, i]
+          commit conn
 
 dump :: IConnection conn => conn -> IO ()
 dump conn = do
@@ -69,26 +76,28 @@ dump conn = do
         pp tl
       pp _ = error "should not happen"
 
-add :: Connection -> IO ()
+add :: IConnection conn => conn -> IO Integer
 add conn = do
   putStr "a task to: "
   hFlush stdout
   task <- getLine
   _ <- run conn "INSERT INTO htodo (name, waiting) VALUES (?, ?)" [toSql task, SqlNull]
   commit conn
-  return ()
+  [i] : _  <- quickQuery' conn "SELECT id FROM htodo WHERE name = ?" [toSql task]
+  return $ fromSql i
 
 db :: IO String
 db = do
   home <- getEnv "HOME"
   return $ home ++ "/.htodo.db"
 
-with_db :: (Connection -> IO ()) -> IO ()
+with_db :: (Connection -> IO a) -> IO a
 with_db f = do
   conn <- db >>= connectSqlite3
   _ <- run conn schema []
-  f conn
+  r <- f conn
   disconnect conn
+  return r
 
 schema :: String
 schema = "CREATE TABLE IF NOT EXISTS htodo (id INTEGER PRIMARY KEY, name TEXT, waiting INTEGER)"
