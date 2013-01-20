@@ -13,7 +13,7 @@ There is a way to add a task.
     % htodo add
     a task to: drink cofee
 
-There is a way to see one task.
+Then `htodo` tells you what to do.
 
     % htodo
     drink cofee
@@ -30,7 +30,7 @@ Here, you remember you have to get cofee.
     > n
     a task to: get cofee
 
-Next, you ask the system what to do.
+Next, you ask `htodo` what to do.
 
     % htodo
     get cofee
