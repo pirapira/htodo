@@ -25,7 +25,7 @@ flag safe
 
 executable htodo
   build-depends:
-    base       >= 3,
+    base       >= 3 && < 5,
     HDBC-sqlite3 >= 2.3.3.0,
     HDBC >= 2.3.1.2
 

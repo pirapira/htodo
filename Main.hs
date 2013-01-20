@@ -24,9 +24,9 @@ pick conn = do
 focus :: IConnection t => t -> [SqlValue] -> IO ()
 focus conn [i,name,SqlNull] = do
   putStrLn $ fromSql name
-  putStrLn "d: done"
-  putStrLn "n: never doing"
-  putStrLn "w: waiting for"
+  putStrLn "  d: done"
+  putStrLn "  n: never doing"
+  putStrLn "  w: waiting for another task"
   putStr "> "
   hFlush stdout
   command <- getLine
